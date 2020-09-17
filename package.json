@@ -1,0 +1,17 @@
+{
+  "version": "0.0.0",
+  "name": "@xyz/fs",
+  "description": "fs",
+  "repository": {
+    "type": "git",
+    "url": "git:fs"
+  },
+  "main": "src/index.js",
+  "scripts": {
+    "test": "./scripts/run-tests.sh"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@xyz/util": "git:repos/util#semver:*"
+  }
+}
