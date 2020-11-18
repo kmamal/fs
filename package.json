@@ -6,7 +6,9 @@
     "type": "git",
     "url": "git:fs"
   },
-  "main": "src/index.js",
+  "exports": {
+    "./": "./src/"
+  },
   "scripts": {
     "test": "./scripts/run-tests.sh"
   },
