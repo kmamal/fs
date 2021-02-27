@@ -15,7 +15,7 @@ const consume = async (stream) => {
 	return Buffer.concat(chunks).toString()
 }
 
-test('LogDB', async (t) => {
+test("LogDB", async (t) => {
 	await Fsp.rm(LOCATION, { force: true, recursive: true })
 
 	{

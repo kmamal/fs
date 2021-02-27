@@ -5,12 +5,13 @@ const { exists: doesExist } = require('../../exists')
 const { getBlockSize } = require('../../block-size')
 const { __bisect } = require('@xyz/util/array/bisect')
 const { Lru } = require('@xyz/util/structs/caches/lru')
+const { LockFile } = require('../lock-file')
 const Constants = require('../constants')
 
 const PB = Constants.POINTER_BYTES
 
-const readPointer = (b) => b.readUIntBE(0, PB)
-const writePointer = (b, x) => b.writeUIntBE(x, 0, PB)
+const readPointer = (b) => Number(b.readBigUInt64BE(0))
+const writePointer = (b, x) => b.writeBigUInt64BE(BigInt(x), 0)
 
 const LOCK_FILE_NAME = 'lock'
 const META_FILE_NAME = 'meta'
@@ -18,7 +19,7 @@ const META_FILE_NAME = 'meta'
 class IndexDB {
 	constructor (location) {
 		this._location = location
-		this._location_lock = Path.join(location, LOCK_FILE_NAME)
+		this._lock_file = new LockFile(Path.join(location, LOCK_FILE_NAME))
 		this._location_meta = Path.join(location, META_FILE_NAME)
 
 		this._state = Constants.STATE.CLOSED
@@ -59,50 +60,30 @@ class IndexDB {
 		} = options
 
 		if (this._state !== Constants.STATE.CLOSED) {
-			const error = new Error('Cannot call open from this state')
+			const error = new Error("Cannot call open from this state")
 			error.code = Constants.BAD_STATE
 			error.state = this._state
 			throw error
 		}
 
+		await Fsp.mkdir(this._location, { recursive: true })
+		this._lock_file.acquire()
+
+		this._state = Constants.STATE.OPENING
+
 		if (typeof fn !== 'function') {
-			const error = new Error('fn must be a function')
+			const error = new Error("fn must be a function")
 			error.value = fn
 			throw error
 		}
 
-		this._state = Constants.STATE.OPENING
-
-		let exists = true
-			&& await doesExist(this._location)
-			&& await doesExist(this._location_meta)
+		let exists = await doesExist(this._location_meta)
 
 		if (!exists && !create) {
-			const error = new Error('not found')
+			const error = new Error("not found")
 			error.code = Constants.MISSING
 			error.path = this._location
 			throw error
-		}
-
-		await Fsp.mkdir(this._location, { recursive: true })
-
-		for (;;) {
-			try {
-				await Fsp.appendFile(this._location_lock, Constants.PID, { flag: 'ax' })
-				break
-			} catch (x) {
-				let contents
-				try {
-					contents = await Fsp.readFile(this._location_lock)
-				} catch (y) {
-					continue
-				}
-
-				const error = new Error('lock file exists')
-				error.code = Constants.LOCKED
-				error.contents = contents
-				throw error
-			}
 		}
 
 		try {
@@ -119,8 +100,8 @@ class IndexDB {
 			if (!exists) {
 				const { key_bytes, value_bytes } = options
 
-				if (key_bytes === undefined) { throw new Error('key_bytes is undefined') }
-				if (value_bytes === undefined) { throw new Error('value_bytes is undefined') }
+				if (key_bytes === undefined) { throw new Error("key_bytes is undefined") }
+				if (value_bytes === undefined) { throw new Error("value_bytes is undefined") }
 
 				const block_size = await getBlockSize(this._location)
 				let num_blocks = 0
@@ -203,7 +184,7 @@ class IndexDB {
 					try {
 						this._meta = JSON.parse(json)
 					} catch (err) {
-						const error = new Error('corrupted meta')
+						const error = new Error("corrupted meta")
 						throw error
 					}
 
@@ -215,79 +196,79 @@ class IndexDB {
 
 					if (validate) {
 						if (!Number.isInteger(size) || size < 0) {
-							const error = new Error('bad size')
+							const error = new Error("bad size")
 							error.value = size
 							throw error
 						}
 
 						if (!Number.isInteger(depth) || depth < 0) {
-							const error = new Error('bad depth')
+							const error = new Error("bad depth")
 							error.value = depth
 							throw error
 						}
 
 						if (!Number.isInteger(node_order) || node_order < 4) {
-							const error = new Error('bad node_order')
+							const error = new Error("bad node_order")
 							error.value = node_order
 							throw error
 						}
 
 						if (!Number.isInteger(leaf_order) || leaf_order < 4) {
-							const error = new Error('bad leaf_order')
+							const error = new Error("bad leaf_order")
 							error.value = leaf_order
 							throw error
 						}
 
 						if (!Number.isInteger(block_size) || block_size < 1) {
-							const error = new Error('bad block_size')
+							const error = new Error("bad block_size")
 							error.value = block_size
 							throw error
 						}
 
 						if (!Number.isInteger(node_size_bytes) || node_size_bytes < 1) {
-							const error = new Error('bad node_size_bytes')
+							const error = new Error("bad node_size_bytes")
 							error.value = node_size_bytes
 							throw error
 						}
 
 						if (!Number.isInteger(leaf_size_bytes) || leaf_size_bytes < 1) {
-							const error = new Error('bad leaf_size_bytes')
+							const error = new Error("bad leaf_size_bytes")
 							error.value = leaf_size_bytes
 							throw error
 						}
 
 						if (!Number.isInteger(key_bytes) || key_bytes < 1) {
-							const error = new Error('bad key_bytes')
+							const error = new Error("bad key_bytes")
 							error.value = key_bytes
 							throw error
 						}
 
 						if (!Number.isInteger(value_bytes) || value_bytes < 1) {
-							const error = new Error('bad value_bytes')
+							const error = new Error("bad value_bytes")
 							error.value = value_bytes
 							throw error
 						}
 
 						if (!Number.isInteger(root) || root < 1) {
-							const error = new Error('bad root')
+							const error = new Error("bad root")
 							error.value = root
 							throw error
 						}
 
 						if (!Number.isInteger(first) || first < 1) {
-							const error = new Error('bad first')
+							const error = new Error("bad first")
 							error.value = first
 							throw error
 						}
 
 						if (!Number.isInteger(last) || last < 1) {
-							const error = new Error('bad last')
+							const error = new Error("bad last")
 							error.value = last
 							throw error
 						}
 
 						if (!Number.isInteger(next_id) || next_id < 2) {
-							const error = new Error('bad next_id')
+							const error = new Error("bad next_id")
 							error.value = next_id
 							throw error
 						}
@@ -325,7 +306,7 @@ class IndexDB {
 			this._state = Constants.STATE.OPEN
 		} catch (error) {
 			try {
-				await Fsp.unlink(this._location_lock)
+				await this._lock_file.release()
 			} catch (err) { }
 			throw error
 		}
@@ -333,7 +314,7 @@ class IndexDB {
 
 	async close () {
 		if (this._state !== Constants.STATE.OPEN) {
-			const error = new Error('Cannot call close from this state')
+			const error = new Error("Cannot call close from this state")
 			error.code = Constants.BAD_STATE
 			error.state = this._state
 			throw error
@@ -341,9 +322,8 @@ class IndexDB {
 
 		this._state = Constants.STATE.CLOSING
 
-		await Fsp.unlink(this._location_lock)
+		await this._lock_file.release()
 
-		this._state = Constants.STATE.CLOSED
 		this._fn = null
 		this._meta = null
 		this._node_bytes = null
@@ -352,6 +332,8 @@ class IndexDB {
 		this._writeNodeSize = null
 		this._readLeafSize = null
 		this._writeLeafSize = null
+
+		this._state = Constants.STATE.CLOSED
 	}
 
 	async has (key) {
@@ -359,7 +341,7 @@ class IndexDB {
 			return this._has(this._meta.root, key, 0)
 		} catch (error) {
 			try {
-				await Fsp.unlink(this._location_lock)
+				await this._lock_file.release()
 			} catch (err) { }
 			throw error
 		}
@@ -379,7 +361,7 @@ class IndexDB {
 			return this._get(this._meta.root, key, 0)
 		} catch (error) {
 			try {
-				await Fsp.unlink(this._location_lock)
+				await this._lock_file.release()
 			} catch (err) { }
 			throw error
 		}
@@ -405,7 +387,7 @@ class IndexDB {
 			return changed
 		} catch (error) {
 			try {
-				await Fsp.unlink(this._location_lock)
+				await this._lock_file.release()
 			} catch (err) { }
 			throw error
 		}
@@ -514,7 +496,7 @@ class IndexDB {
 			return changed
 		} catch (error) {
 			try {
-				await Fsp.unlink(this._location_lock)
+				await this._lock_file.release()
 			} catch (err) { }
 			throw error
 		}
