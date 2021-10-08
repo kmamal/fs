@@ -6,7 +6,7 @@ class PageListFile {
 	constructor (location, page_size, header_offset) {
 		this._file = new PagedFile(location, page_size)
 		this._header_offset = header_offset
-		this._buffer = Buffer.alloc(page_size)
+		this._buffer = Buffer.allocUnsafe(page_size)
 	}
 
 	async open (options) {

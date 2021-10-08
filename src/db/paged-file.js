@@ -77,7 +77,7 @@ class PagedFile {
 			page = _page
 			offset = _offset
 		} else {
-			page = Buffer.alloc(size)
+			page = Buffer.allocUnsafe(size)
 			offset = 0
 		}
 

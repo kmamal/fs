@@ -1,6 +1,6 @@
 const Fsp = require('fs').promises
 const Path = require('path')
-const { promise: { Semaphore } } = require('@xyz/util')
+const { promise: { Semaphore } } = require('@kmamal/util')
 
 const _recurse = async ({ path, name }, visitors, semaphore) => {
 	const { onFile, onDir, filter } = visitors

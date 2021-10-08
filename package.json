@@ -1,10 +1,10 @@
 {
   "version": "0.0.7",
-  "name": "@xyz/fs",
+  "name": "@kmamal/fs",
   "description": "fs",
   "repository": {
     "type": "git",
-    "url": "git:fs"
+    "url": "git@github.com:kmamal/fs.git"
   },
   "exports": {
     "./": "./src/"
@@ -12,8 +12,8 @@
   "scripts": {
     "test": "./scripts/run-tests.sh"
   },
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
-    "@xyz/util": "git:repos/util#semver:*"
+    "@kmamal/util": "kmamal/util#semver:*"
   }
 }

@@ -81,7 +81,7 @@ class LogDB {
 
 		await this._openFds()
 
-		const buffer = Buffer.alloc(PB)
+		const buffer = Buffer.allocUnsafe(PB)
 
 		if (!exists) {
 			buffer.fill(0)
@@ -229,7 +229,7 @@ class LogDB {
 			await this._sequence.push(async () => {
 				this._data_length += data_buffer.length
 				this._index_length += PB
-				const index_buffer = Buffer.alloc(PB)
+				const index_buffer = Buffer.allocUnsafe(PB)
 				index_buffer.writeBigInt64BE(BigInt(this._data_length))
 				await Promise.all([
 					this._data_fd.appendFile(data_buffer).then(() => this._data_fd.datasync()),
@@ -272,7 +272,7 @@ class LogDB {
 		}
 
 		try {
-			const index_buffer = Buffer.alloc(PB * 2)
+			const index_buffer = Buffer.allocUnsafe(PB * 2)
 			await this._index_fd.read(index_buffer, 0, PB * 2, index * PB)
 			const start = Number(index_buffer.readBigInt64BE(0))
 			const end = Number(index_buffer.readBigInt64BE(PB)) - 1

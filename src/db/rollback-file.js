@@ -20,7 +20,7 @@ class RollbackFile {
 		this._data_file = new PagedFile(this._location_data, page_size)
 		this._journal_page_size = page_size + PB
 		this._journal_file = new PagedFile(this._location_journal, this._journal_page_size)
-		this._journal_page = Buffer.alloc(this._journal_page_size)
+		this._journal_page = Buffer.allocUnsafe(this._journal_page_size)
 		this._journaled_pages = new Set()
 
 		this._sequnce = new Sequential()

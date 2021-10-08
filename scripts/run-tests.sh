@@ -3,4 +3,4 @@
 set -eEu -o pipefail
 
 shopt -s globstar nullglob
-node node_modules/@xyz/testing src/**/*.test.js
+node node_modules/@kmamal/testing src/**/*.test.js

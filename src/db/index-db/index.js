@@ -3,8 +3,8 @@ const Fsp = Fs.promises
 const Path = require('path')
 const { exists: doesExist } = require('../../exists')
 const { getBlockSize } = require('../../block-size')
-const { __bisect } = require('@xyz/util/array/bisect')
-const { Lru } = require('@xyz/util/structs/caches/lru')
+const { __bisect } = require('@kmamal/util/array/bisect')
+const { Lru } = require('@kmamal/util/structs/caches/lru')
 const { LockFile } = require('../lock-file')
 const Constants = require('../constants')
 
@@ -716,14 +716,14 @@ class IndexDB {
 	}
 
 	_makeNode (id) {
-		const _id = Buffer.alloc(PB)
+		const _id = Buffer.allocUnsafe(PB)
 		writePointer(_id, id)
 
 		const path = Path.join(this._location, id.toString())
 
 		const { node_order, node_size_bytes, key_bytes } = this._meta
 
-		const _node = Buffer.alloc(this._node_bytes)
+		const _node = Buffer.allocUnsafe(this._node_bytes)
 		let start
 		let end
 
@@ -762,14 +762,14 @@ class IndexDB {
 	}
 
 	_makeLeaf (id) {
-		const _id = Buffer.alloc(PB)
+		const _id = Buffer.allocUnsafe(PB)
 		writePointer(_id, id)
 
 		const path = Path.join(this._location, id.toString(16))
 
 		const { leaf_order, leaf_size_bytes, key_bytes, value_bytes } = this._meta
 
-		const _node = Buffer.alloc(this._leaf_bytes)
+		const _node = Buffer.allocUnsafe(this._leaf_bytes)
 		let start
 		let end
 
