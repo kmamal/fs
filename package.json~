@@ -1,0 +1,20 @@
+{
+  "version": "0.0.8",
+  "name": "@kmamal/fs",
+  "description": "fs",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:kmamal/fs.git"
+  },
+  "exports": {
+    "./": "./src/"
+  },
+  "scripts": {
+    "test": "./scripts/run-tests.sh",
+    "update-exports": "./scripts/update-exports.sh"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@kmamal/util": "^0.0.57"
+  }
+}

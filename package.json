@@ -7,13 +7,24 @@
     "url": "git@github.com:kmamal/fs.git"
   },
   "exports": {
-    "./": "./src/"
+    "./recurse": "./src/recurse.js",
+    "./exists": "./src/exists.js",
+    "./db/lock-file": "./src/db/lock-file.js",
+    "./db/paged-file": "./src/db/paged-file.js",
+    "./db/index-db": "./src/db/index-db/index.js",
+    "./db/page-list-file": "./src/db/page-list-file.js",
+    "./db/rollback-file": "./src/db/rollback-file.js",
+    "./db/log-db": "./src/db/log-db/index.js",
+    "./db/constants": "./src/db/constants.js",
+    "./db/sequential": "./src/db/sequential.js",
+    "./block-size": "./src/block-size.js"
   },
   "scripts": {
-    "test": "./scripts/run-tests.sh"
+    "test": "./scripts/run-tests.sh",
+    "update-exports": "./scripts/update-exports.sh"
   },
   "license": "MIT",
   "dependencies": {
-    "@kmamal/util": "kmamal/util#semver:*"
+    "@kmamal/util": "^0.0.57"
   }
 }
