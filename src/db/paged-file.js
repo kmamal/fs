@@ -26,6 +26,7 @@ class PagedFile {
 
 		this._state = Constants.STATE.OPENING
 
+		// TODO: race condition
 		const exists = await doesExist(this._location)
 
 		if (!exists && !create) {

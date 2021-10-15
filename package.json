@@ -9,6 +9,7 @@
   "exports": {
     "./recurse": "./src/recurse.js",
     "./exists": "./src/exists.js",
+    "./touch": "./src/touch.js",
     "./db/lock-file": "./src/db/lock-file.js",
     "./db/paged-file": "./src/db/paged-file.js",
     "./db/index-db": "./src/db/index-db/index.js",

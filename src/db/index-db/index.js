@@ -77,6 +77,7 @@ class IndexDB {
 			throw error
 		}
 
+		// TODO: race condition
 		let exists = await doesExist(this._location_meta)
 
 		if (!exists && !create) {

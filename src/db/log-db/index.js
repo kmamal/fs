@@ -59,6 +59,7 @@ class LogDB {
 
 		this._state = Constants.STATE.OPENING
 
+		// TODO: race condition
 		let exists = true
 			&& await doesExist(this._location)
 			&& await doesExist(this._location_index)
