@@ -26,6 +26,6 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@kmamal/util": "^0.0.57"
+    "@kmamal/util": "^0.0.92"
   }
 }

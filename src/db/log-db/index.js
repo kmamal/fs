@@ -15,17 +15,17 @@ const INDEX_FILE_NAME = 'index'
 class LogDB {
 	constructor (location) {
 		this._location = location
-		this._lock_file = new LockFile(Path.join(location, LOCK_FILE_NAME))
-		this._location_data = Path.join(location, DATA_FILE_NAME)
-		this._location_index = Path.join(location, INDEX_FILE_NAME)
+		this._lockFile = new LockFile(Path.join(location, LOCK_FILE_NAME))
+		this._locationData = Path.join(location, DATA_FILE_NAME)
+		this._locationIndex = Path.join(location, INDEX_FILE_NAME)
 
 		this._state = Constants.STATE.CLOSED
 
-		this._data_length = null
-		this._index_length = null
+		this._dataLength = null
+		this._indexLength = null
 
-		this._data_fd = null
-		this._index_fd = null
+		this._dataFd = null
+		this._indexFd = null
 
 		this._sequence = new Sequential()
 	}
@@ -34,10 +34,10 @@ class LogDB {
 
 	get state () { return this._state }
 
-	get dataBytes () { return this._data_length }
-	get indexBytes () { return this._index_length }
+	get dataBytes () { return this._dataLength }
+	get indexBytes () { return this._indexLength }
 	get bytes () { return this.dataBytes + this.indexBytes }
-	get length () { return this._index_length / PB - 1 }
+	get length () { return this._indexLength / PB - 1 }
 
 	async open (options = {}) {
 		const {
@@ -55,15 +55,15 @@ class LogDB {
 		}
 
 		await Fsp.mkdir(this._location, { recursive: true })
-		this._lock_file.acquire()
+		this._lockFile.acquire()
 
 		this._state = Constants.STATE.OPENING
 
 		// TODO: race condition
 		let exists = true
 			&& await doesExist(this._location)
-			&& await doesExist(this._location_index)
-			&& await doesExist(this._location_data)
+			&& await doesExist(this._locationIndex)
+			&& await doesExist(this._locationData)
 
 		if (!exists && !create) {
 			const error = new Error("not found")
@@ -74,8 +74,8 @@ class LogDB {
 
 		if (exists && truncate) {
 			await Promise.all([
-				Fsp.unlink(this._location_data),
-				Fsp.unlink(this._location_index),
+				Fsp.unlink(this._locationData),
+				Fsp.unlink(this._locationIndex),
 			])
 			exists = false
 		}
@@ -86,66 +86,66 @@ class LogDB {
 
 		if (!exists) {
 			buffer.fill(0)
-			await this._index_fd.appendFile(buffer)
-			await this._index_fd.datasync()
-			this._index_length += PB
+			await this._indexFd.appendFile(buffer)
+			await this._indexFd.datasync()
+			this._indexLength += PB
 		} else if (validate) {
-			let index_offset = 0
-			let last_data_pointer = 0
+			let indexOffset = 0
+			let lastDataPointer = 0
 
 			try {
-				if (this._index_length < PB) {
+				if (this._indexLength < PB) {
 					const error = new Error("zero index missing")
 					throw error
 				}
 
-				await this._index_fd.read(buffer, 0, PB, index_offset)
+				await this._indexFd.read(buffer, 0, PB, indexOffset)
 				if (Number(buffer.readBigInt64BE(0)) !== 0) {
 					const error = new Error("index does not start at zero")
 					throw error
 				}
 
-				index_offset += PB
+				indexOffset += PB
 
-				while (index_offset < this._index_length) {
-					await this._index_fd.read(buffer, 0, PB, index_offset)
-					const data_pointer = Number(buffer.readBigInt64BE(0))
+				while (indexOffset < this._indexLength) {
+					await this._indexFd.read(buffer, 0, PB, indexOffset)
+					const dataPointer = Number(buffer.readBigInt64BE(0))
 
-					if (data_pointer < last_data_pointer) {
+					if (dataPointer < lastDataPointer) {
 						const error = new Error("corrupted index")
-						const key = index_offset % PB
+						const key = indexOffset % PB
 						error.key1 = key - 1
-						error.value1 = last_data_pointer
+						error.value1 = lastDataPointer
 						error.key2 = key
-						error.value2 = data_pointer
+						error.value2 = dataPointer
 						throw error
 					}
 
-					if (data_pointer > this._data_length) {
+					if (dataPointer > this._dataLength) {
 						const error = new Error("missing data")
-						error.key = index_offset % PB
-						error.value = data_pointer
-						error.data_size = this._data_length
+						error.key = indexOffset % PB
+						error.value = dataPointer
+						error.dataSize = this._dataLength
 						throw error
 					}
 
-					index_offset += PB
-					last_data_pointer = data_pointer
+					indexOffset += PB
+					lastDataPointer = dataPointer
 				}
 
-				if (index_offset !== this._index_length) {
+				if (indexOffset !== this._indexLength) {
 					const error = new Error("odd bytes in index")
-					error.index_actual_size = this._index_length
-					error.index_expected_size = index_offset
+					error.indexSctualSize = this._indexLength
+					error.indexExpectedSize = indexOffset
 
-					index_offset -= PB
+					indexOffset -= PB
 					throw error
 				}
 			} catch (error) {
 				error.code = Constants.ERROR.CORRUPTED
 				if (!fix) {
 					try {
-						await this._lock_file.release()
+						await this._lockFile.release()
 					} catch (err) { }
 					throw error
 				}
@@ -154,16 +154,16 @@ class LogDB {
 
 				await this._closeFds()
 				await Promise.all([
-					Fsp.truncate(this._location_data, last_data_pointer),
-					Fsp.truncate(this._location_index, index_offset),
+					Fsp.truncate(this._locationData, lastDataPointer),
+					Fsp.truncate(this._locationIndex, indexOffset),
 				])
 				await this._openFds()
 
-				if (this._index_length === 0) {
+				if (this._indexLength === 0) {
 					buffer.fill(0)
-					await this._index_fd.appendFile(buffer)
-					await this._index_fd.datasync()
-					this._index_length += PB
+					await this._indexFd.appendFile(buffer)
+					await this._indexFd.datasync()
+					this._indexLength += PB
 				}
 			}
 		}
@@ -184,14 +184,14 @@ class LogDB {
 		await this.flush()
 		await Promise.all([
 			this._closeFds(),
-			this._lock_file.release(),
+			this._lockFile.release(),
 		])
 
-		this._data_length = null
-		this._index_length = null
+		this._dataLength = null
+		this._indexLength = null
 
-		this._data_fd = null
-		this._index_fd = null
+		this._dataFd = null
+		this._indexFd = null
 
 		this._state = Constants.STATE.CLOSED
 	}
@@ -199,26 +199,26 @@ class LogDB {
 	async _openFds () {
 		await Promise.all([
 			(async () => {
-				this._data_fd = await Fsp.open(this._location_data, 'a')
-				const stats = await this._data_fd.stat()
-				this._data_length = stats.size
+				this._dataFd = await Fsp.open(this._locationData, 'a')
+				const stats = await this._dataFd.stat()
+				this._dataLength = stats.size
 			})(),
 			(async () => {
-				this._index_fd = await Fsp.open(this._location_index, 'a+')
-				const stats = await this._index_fd.stat()
-				this._index_length = stats.size
+				this._indexFd = await Fsp.open(this._locationIndex, 'a+')
+				const stats = await this._indexFd.stat()
+				this._indexLength = stats.size
 			})(),
 		])
 	}
 
 	async _closeFds () {
 		await Promise.all([
-			this._data_fd.close(),
-			this._index_fd.close(),
+			this._dataFd.close(),
+			this._indexFd.close(),
 		])
 	}
 
-	async append (data_buffer) {
+	async append (dataBuffer) {
 		if (this._state !== Constants.STATE.OPEN) {
 			const error = new Error("Cannot call append from this state")
 			error.code = Constants.ERROR.BAD_STATE
@@ -228,13 +228,13 @@ class LogDB {
 
 		try {
 			await this._sequence.push(async () => {
-				this._data_length += data_buffer.length
-				this._index_length += PB
-				const index_buffer = Buffer.allocUnsafe(PB)
-				index_buffer.writeBigInt64BE(BigInt(this._data_length))
+				this._dataLength += dataBuffer.length
+				this._indexLength += PB
+				const indexBuffer = Buffer.allocUnsafe(PB)
+				indexBuffer.writeBigInt64BE(BigInt(this._dataLength))
 				await Promise.all([
-					this._data_fd.appendFile(data_buffer).then(() => this._data_fd.datasync()),
-					this._index_fd.appendFile(index_buffer).then(() => this._index_fd.datasync()),
+					this._dataFd.appendFile(dataBuffer).then(() => this._dataFd.datasync()),
+					this._indexFd.appendFile(indexBuffer).then(() => this._indexFd.datasync()),
 				])
 			})
 		} catch (error) {
@@ -273,15 +273,15 @@ class LogDB {
 		}
 
 		try {
-			const index_buffer = Buffer.allocUnsafe(PB * 2)
-			await this._index_fd.read(index_buffer, 0, PB * 2, index * PB)
-			const start = Number(index_buffer.readBigInt64BE(0))
-			const end = Number(index_buffer.readBigInt64BE(PB)) - 1
+			const indexBuffer = Buffer.allocUnsafe(PB * 2)
+			await this._indexFd.read(indexBuffer, 0, PB * 2, index * PB)
+			const start = Number(indexBuffer.readBigInt64BE(0))
+			const end = Number(indexBuffer.readBigInt64BE(PB)) - 1
 
-			return Fs.createReadStream(this._location_data, { start, end })
+			return Fs.createReadStream(this._locationData, { start, end })
 		} catch (error) {
 			try {
-				await this._lock_file.release()
+				await this._lockFile.release()
 			} catch (err) {}
 			throw error
 		}
@@ -293,16 +293,16 @@ class LogDB {
 			reverse, limit,
 		} = options
 
-		const [ before_start, _start, before_end, _end ] = reverse
+		const [ beforeStart, _start, beforeEnd, _end ] = reverse
 			? [ lt, lte, gte, gt ]
 			: [ gt, gte, lte, lt ]
 		const start
 			= _start !== undefined ? _start
-			: before_start !== undefined ? before_start + 1
+			: beforeStart !== undefined ? beforeStart + 1
 			: 0
 		const end
 			= _end !== undefined ? _end
-			: before_end !== undefined ? before_end + 1
+			: beforeEnd !== undefined ? beforeEnd + 1
 			: limit !== undefined ? start + limit
 			: this.length
 		const inc = reverse ? -1 : 1

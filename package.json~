@@ -1,5 +1,5 @@
 {
-  "version": "0.0.10",
+  "version": "0.0.11",
   "name": "@kmamal/fs",
   "description": "fs",
   "repository": {
@@ -9,6 +9,7 @@
   "exports": {
     "./recurse": "./src/recurse.js",
     "./exists": "./src/exists.js",
+    "./touch": "./src/touch.js",
     "./db/lock-file": "./src/db/lock-file.js",
     "./db/paged-file": "./src/db/paged-file.js",
     "./db/index-db": "./src/db/index-db/index.js",
@@ -25,6 +26,6 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@kmamal/util": "^0.0.57"
+    "@kmamal/util": "^0.0.92"
   }
 }
